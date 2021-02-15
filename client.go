@@ -10,39 +10,44 @@ import (
 )
 
 type Http interface {
-	Get()
-	Post()
-	Put()
-	Delete()
+	Get(endpoint string, params map[string]string) []byte
+	Post(endpoint string, params map[string]string) []byte
+	Put(endpoint string, params map[string]string) []byte
+	Delete(endpoint string, params map[string]string) []byte
 }
 
+// チャットワーククライアント
 type Client struct {
+	InnerHttpClient Http
+}
+
+// HTTP インターフェースを持った HTTP クライアント
+type HttpClient struct {
 	ApiKey  string
 	BaseUrl string
-	Http
 }
 
 func NewClient(apiKey string) *Client {
-	return &Client{ApiKey: apiKey, BaseUrl: BaseUrl}
+	return &Client{&HttpClient{ApiKey: apiKey, BaseUrl: BaseUrl}}
 }
 
-func (c *Client) Get(endpoint string, params map[string]string) []byte {
+func (c *HttpClient) Get(endpoint string, params map[string]string) []byte {
 	return c.execute("GET", endpoint, params)
 }
 
-func (c *Client) Post(endpoint string, params map[string]string) []byte {
+func (c *HttpClient) Post(endpoint string, params map[string]string) []byte {
 	return c.execute("POST", endpoint, params)
 }
 
-func (c *Client) Put(endpoint string, params map[string]string) []byte {
+func (c *HttpClient) Put(endpoint string, params map[string]string) []byte {
 	return c.execute("PUT", endpoint, params)
 }
 
-func (c *Client) Delete(endpoint string, params map[string]string) []byte {
+func (c *HttpClient) Delete(endpoint string, params map[string]string) []byte {
 	return c.execute("DELETE", endpoint, params)
 }
 
-func (c *Client) buildUrl(baseUrl, endpoint string, params map[string]string) string {
+func (c *HttpClient) buildUrl(baseUrl, endpoint string, params map[string]string) string {
 	query := make([]string, len(params))
 	for k := range params {
 		query = append(query, k+"="+params[k])
@@ -50,7 +55,7 @@ func (c *Client) buildUrl(baseUrl, endpoint string, params map[string]string) st
 	return baseUrl + endpoint + "?" + strings.Join(query, "&")
 }
 
-func (c *Client) buildBody(params map[string]string) url.Values {
+func (c *HttpClient) buildBody(params map[string]string) url.Values {
 	body := url.Values{}
 	for k := range params {
 		body.Add(k, params[k])
@@ -58,7 +63,7 @@ func (c *Client) buildBody(params map[string]string) url.Values {
 	return body
 }
 
-func (c *Client) parseBody(resp *http.Response) []byte {
+func (c *HttpClient) parseBody(resp *http.Response) []byte {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -68,7 +73,7 @@ func (c *Client) parseBody(resp *http.Response) []byte {
 	return body
 }
 
-func (c *Client) execute(method, endpoint string, params map[string]string) []byte {
+func (c *HttpClient) execute(method, endpoint string, params map[string]string) []byte {
 	httpClient := &http.Client{}
 
 	var (
