@@ -10,16 +10,15 @@ import (
 )
 
 type Http interface {
-	Get()
-	Post()
-	Put()
-	Delete()
+	Get(endpoint string, params map[string]string) []byte
+	Post(endpoint string, params map[string]string) []byte
+	Put(endpoint string, params map[string]string) []byte
+	Delete(endpoint string, params map[string]string) []byte
 }
 
 type Client struct {
 	ApiKey  string
 	BaseUrl string
-	Http
 }
 
 func NewClient(apiKey string) *Client {
